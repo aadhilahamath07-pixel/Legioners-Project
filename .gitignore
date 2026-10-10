@@ -32,4 +32,5 @@ runs/
 
 # OS files
 .DS_Store
-Thumbs.db
+Thumbs.dbbackend/detector_backup.py
+backend/inspections.db

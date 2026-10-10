@@ -1,6 +1,8 @@
 
 from pathlib import Path
 from ultralytics import YOLO
+from severity import estimate_severity
+
 import base64
 import cv2
 
@@ -22,6 +24,11 @@ model = YOLO(str(MODEL_PATH))
 
 
 def detect_potholes(image_path: str):
+    original_image = cv2.imread(image_path)
+
+    if original_image is None:
+        raise ValueError("Could not read the input image.")
+
     results = model.predict(
         source=image_path,
         conf=0.45,
@@ -37,19 +44,28 @@ def detect_potholes(image_path: str):
             coords = box.xyxy[0].tolist()
             class_id = int(box.cls[0])
 
+            bbox = {
+                "x1": round(coords[0], 2),
+                "y1": round(coords[1], 2),
+                "x2": round(coords[2], 2),
+                "y2": round(coords[3], 2),
+            }
+
+            severity_result = estimate_severity(
+                original_image,
+                bbox,
+            )
+
             detections.append({
                 "class_id": class_id,
                 "class_name": result.names[class_id],
                 "confidence": round(float(box.conf[0]), 4),
-                "bbox": {
-                    "x1": round(coords[0], 2),
-                    "y1": round(coords[1], 2),
-                    "x2": round(coords[2], 2),
-                    "y2": round(coords[3], 2),
-                },
+                "bbox": bbox,
+                **severity_result,
             })
 
-            annotated_image = result.plot()
+    # Preserve annotated-image generation, including zero detections.
+    annotated_image = result.plot()
 
     success, encoded_image = cv2.imencode(
         ".jpg",
@@ -61,8 +77,8 @@ def detect_potholes(image_path: str):
         raise RuntimeError("Could not encode the annotated image.")
 
     image_base64 = base64.b64encode(
-    encoded_image.tobytes()
-).decode("utf-8")
+        encoded_image.tobytes()
+    ).decode("utf-8")
 
     return {
         "image_width": int(result.orig_shape[1]),

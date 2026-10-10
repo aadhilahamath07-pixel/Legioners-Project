@@ -1,4 +1,4 @@
-path: ../data/potholes/dataset_with_negatives
+path: C:/Users/thouf/Downloads/Legioners-Project/data/potholes/dataset_with_negatives
 
 train: train/images
 val: valid/images
